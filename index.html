@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>赛博打工人：BUG帝国</title>
+    <style>
+        * {
+            touch-action: manipulation;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #0f0;
+            --bg: #050505;
+            --danger: #ff0055;
+            --highlight: #00ffff;
+            --boss-color: #ff3300;
+            --card-bg: rgba(10, 10, 20, 0.8);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg);
+            color: var(--primary);
+            font-family: 'Courier New', Courier, monospace;
+            overflow-x: hidden;
+            user-select: none;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.2s, transform 0.1s;
+            touch-action: pan-y pinch-zoom;
+        }
+
+        /* 狂暴模式背景 */
+        body.boss-mode {
+            background-color: #1a0505;
+            animation: shake-bg 0.2s infinite;
+        }
+
+        .grid-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(0, 255, 0, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 255, 0, 0.1) 1px, transparent 1px);
+            background-size: 30px 30px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+            padding: 16px 12px 30px;
+            position: relative;
+            z-index: 5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .dashboard {
+            text-align: center;
+            margin-bottom: 25px;
+            background: var(--card-bg);
+            backdrop-filter: blur(4px);
+            border-radius: 40px;
+            padding: 12px 20px;
+            width: 100%;
+            border: 1px solid rgba(0,255,0,0.3);
+            transition: all 0.2s;
+        }
+
+        body.boss-mode .dashboard {
+            border-color: var(--danger);
+            box-shadow: 0 0 20px rgba(255,0,85,0.4);
+            background: rgba(30,0,0,0.7);
+        }
+
+        h1 { font-size: 1rem; margin: 0 0 6px; letter-spacing: 1px; opacity: 0.9; }
+        .score-container { font-size: 3.5rem; font-weight: bold; margin: 5px 0; word-break: break-word; }
+        .cps-container { font-size: 0.9rem; color: var(--highlight); }
+
+        .target-btn {
+            width: 220px;
+            height: 220px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #2a2a2a, #000000);
+            border: 4px solid var(--primary);
+            box-shadow: 0 0 15px var(--primary), inset 0 0 15px rgba(0,255,0,0.3);
+            cursor: pointer;
+            transition: transform 0.05s cubic-bezier(0.2, 1.2, 0.8, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 5rem;
+            margin: 10px auto;
+            touch-action: none;
+            background-color: #111;
+        }
+
+        .target-btn:active { transform: scale(0.92); }
+
+        body.boss-mode .target-btn {
+            border-color: var(--danger);
+            box-shadow: 0 0 35px var(--danger), inset 0 0 25px red;
+            animation: pulse-red 0.2s infinite alternate;
+        }
+
+        .shop {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 14px;
+            margin-top: 28px;
+            width: 100%;
+        }
+        .upgrade-btn {
+            background: #111;
+            border: 1px solid var(--highlight);
+            color: var(--highlight);
+            padding: 12px 18px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.85rem;
+            font-weight: bold;
+            border-radius: 32px;
+            transition: all 0.2s;
+            flex: 1 1 auto;
+            min-width: 130px;
+            text-align: center;
+            backdrop-filter: blur(4px);
+        }
+        .upgrade-btn:active:not(:disabled) { transform: scale(0.96); background: var(--highlight); color: black; }
+        .upgrade-btn:disabled { opacity: 0.4; border-color: #555; }
+
+        .extra-features {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 20px;
+            width: 100%;
+        }
+        .feature-badge {
+            background: rgba(0,255,255,0.1);
+            border: 1px solid #0f0;
+            border-radius: 60px;
+            padding: 6px 14px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            backdrop-filter: blur(4px);
+        }
+        .action-btn {
+            background: #222;
+            border: 1px solid #ffaa33;
+            color: #ffaa33;
+            padding: 8px 16px;
+            border-radius: 40px;
+            font-family: monospace;
+            font-weight: bold;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: 0.1s linear;
+        }
+        .action-btn:active { transform: scale(0.96); background: #ffaa33; color: black; }
+
+        .secret-boss-btn {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0,0,0,0.6);
+            border: 1px solid #ff6666;
+            border-radius: 50%;
+            width: 52px;
+            height: 52px;
+            font-size: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 200;
+            backdrop-filter: blur(8px);
+            box-shadow: 0 0 8px red;
+            transition: 0.1s;
+            touch-action: manipulation;
+        }
+        .secret-boss-btn:active { transform: scale(0.9); background: rgba(255,0,0,0.5); }
+
+        .floating-text {
+            position: fixed;
+            font-weight: bold;
+            font-size: 1.4rem;
+            pointer-events: none;
+            animation: floatUp 0.9s ease-out forwards;
+            z-index: 1000;
+            text-shadow: 0 0 3px black;
+        }
+        @keyframes floatUp {
+            0% { transform: translateY(0px) scale(0.8); opacity: 1; }
+            100% { transform: translateY(-120px) scale(1.3); opacity: 0; }
+        }
+        @keyframes shake-bg {
+            0% { transform: translate(1px, 1px); }
+            25% { transform: translate(-1px, -1px); }
+            100% { transform: translate(0, 0); }
+        }
+        @keyframes pulse-red {
+            from { box-shadow: 0 0 20px #ff0055; }
+            to { box-shadow: 0 0 60px #ff3300; }
+        }
+
+        .toast-msg {
+            position: fixed;
+            bottom: 30%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #000000dd;
+            backdrop-filter: blur(12px);
+            border: 2px solid gold;
+            border-radius: 40px;
+            padding: 10px 20px;
+            color: gold;
+            font-weight: bold;
+            z-index: 300;
+            animation: fadeOut 1.5s forwards;
+            text-align: center;
+            font-size: 1rem;
+        }
+        @keyframes fadeOut {
+            0% { opacity: 1; transform: translateX(-50%) scale(0.9); }
+            80% { opacity: 1; }
+            100% { opacity: 0; transform: translateX(-50%) scale(1.1); visibility: hidden; }
+        }
+
+        .combo-indicator {
+            position: fixed;
+            top: 80px;
+            right: 15px;
+            background: #000000aa;
+            border-left: 5px solid cyan;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 1rem;
+            font-weight: bold;
+            color: cyan;
+            backdrop-filter: blur(4px);
+            z-index: 99;
+            pointer-events: none;
+        }
+        .save-tip {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            font-size: 0.6rem;
+            background: rgba(0,0,0,0.5);
+            padding: 4px 8px;
+            border-radius: 12px;
+            color: #0f0;
+            pointer-events: none;
+            z-index: 99;
+        }
+
+        @media (max-width: 500px) {
+            .target-btn { width: 180px; height: 180px; font-size: 4rem; }
+            .score-container { font-size: 2.8rem; }
+            .upgrade-btn { padding: 8px 12px; font-size: 0.7rem; min-width: 110px; }
+        }
+    </style>
+</head>
+<body>
+<div class="grid-bg"></div>
+
+<div class="container">
+    <div class="dashboard">
+        <h1 id="statusText">🐞 修复 BUG 大作战 🛠️</h1>
+        <div class="score-container" id="score">0</div>
+        <div class="cps-container"><span id="cps">0</span> 个/秒 (自动修复)</div>
+        <div class="cps-container" style="font-size:0.7rem;">⚡ 暴击倍率: <span id="critMult">1.0</span>x &nbsp;| 🔥 连击: <span id="comboCount">0</span></div>
+    </div>
+
+    <button class="target-btn" id="clickBtn">
+        <span>🐛</span>
+    </button>
+
+    <div class="shop">
+        <button class="upgrade-btn" id="btnUpgradeClick">
+            升级键盘 ⌨️<br>
+            <small>花费: <span id="costClick">100</span></small><br>
+            <small>+1 点击伤害</small>
+        </button>
+        <button class="upgrade-btn" id="btnUpgradeAuto">
+            雇佣实习生 🤖<br>
+            <small>花费: <span id="costAuto">500</span></small><br>
+            <small>+5/秒</small>
+        </button>
+    </div>
+
+    <!-- 原有10个趣味区域 + 新增5个 = 15个趣味功能区 -->
+    <div class="extra-features">
+        <button class="action-btn" id="luckDrawBtn">🎲 幸运轮盘</button>
+        <button class="action-btn" id="nukeBtn">💣 核弹清理</button>
+        <button class="action-btn" id="timeWarpBtn">⏩ 时间扭曲</button>
+        <button class="action-btn" id="investBtn">📈 赛博炒股</button>
+        <div class="feature-badge" id="petDisplay">🐱 打工喵: 休息</div>
+        <button class="action-btn" id="petBtn">🐾 撸猫加薪</button>
+        <button class="action-btn" id="rageModeBtn" style="border-color:#ff66aa;">😈 临时狂暴</button>
+        <button class="action-btn" id="sharesBtn">📊 分红保险</button>
+    </div>
+    <div class="extra-features" style="margin-top: 6px;">
+        <span class="feature-badge" id="achievementBadge">🏆 成就: 新手码农</span>
+        <button class="action-btn" id="skinBtn">🎨 换皮肤</button>
+        <!-- 新增5个功能按钮 -->
+        <button class="action-btn" id="coffeeBtn">☕ 咖啡因爆发</button>
+        <button class="action-btn" id="magnetBtn">🧲 代码磁铁</button>
+        <button class="action-btn" id="lotteryBtn">🎰 超级彩票</button>
+        <button class="action-btn" id="mentorBtn">👨‍🏫 导师光环</button>
+        <button class="action-btn" id="resetBtn" style="border-color:#ff4444;">🔄 转世重生</button>
+    </div>
+</div>
+
+<div class="secret-boss-btn" id="secretBossBtn">👁️</div>
+<div class="combo-indicator" id="comboIndicator">🔥 0连击</div>
+<div class="save-tip" id="saveTip">💾 自动存档中</div>
+
+<script>
+    // ---------- 游戏核心状态 ----------
+    let state = {
+        score: 0,
+        clickPower: 1,
+        autoRate: 0,
+        costClick: 100,
+        costAuto: 500,
+        isBossMode: false,
+        critChance: 0.15,
+        critDamage: 2.0,
+        combo: 0,
+        lastClickTime: 0,
+        tempRageEnd: 0,
+        tempRageMult: 1,
+        skinIndex: 0,
+        petHappy: 0,
+        dividendRate: 0,
+        // 新增状态 5个功能
+        coffeeEnd: 0,           // 咖啡因爆发结束时间
+        magnetActive: false,    // 代码磁铁激活 (自动拾取飘分)
+        mentorActive: false,    // 导师光环激活 (永久点击加成)
+        mentorBonus: 0,         // 导师额外加成
+        lastSave: 0
+    };
+
+    // DOM 绑定
+    const elScore = document.getElementById('score');
+    const elCps = document.getElementById('cps');
+    const elCostClick = document.getElementById('costClick');
+    const elCostAuto = document.getElementById('costAuto');
+    const elStatusText = document.getElementById('statusText');
+    const elCritMult = document.getElementById('critMult');
+    const elComboSpan = document.getElementById('comboCount');
+    const comboIndicatorDiv = document.getElementById('comboIndicator');
+    const clickBtn = document.getElementById('clickBtn');
+    const secretBossBtn = document.getElementById('secretBossBtn');
+    const saveTipSpan = document.getElementById('saveTip');
+
+    // 音效上下文
+    let audioCtx = null;
+    function initAudio() {
+        if (audioCtx) return audioCtx;
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        return audioCtx;
+    }
+    function playSound(type) {
+        try {
+            let ctx = initAudio();
+            if (ctx.state === 'suspended') ctx.resume();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            const now = ctx.currentTime;
+            if (type === 'click') {
+                let freq = state.isBossMode ? 250 : 520;
+                osc.type = state.isBossMode ? 'sawtooth' : 'square';
+                osc.frequency.setValueAtTime(freq, now);
+                osc.frequency.exponentialRampToValueAtTime(100, now+0.12);
+                gain.gain.setValueAtTime(0.08, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now+0.12);
+                osc.start(); osc.stop(now+0.12);
+            } else if (type === 'buy') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(660, now);
+                osc.frequency.linearRampToValueAtTime(1100, now+0.2);
+                gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0, now+0.25);
+                osc.start(); osc.stop(now+0.25);
+            } else if (type === 'alert') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(880, now);
+                gain.gain.setValueAtTime(0.15, now); gain.gain.linearRampToValueAtTime(0, now+0.3);
+                osc.start(); osc.stop(now+0.3);
+            }
+        } catch(e) { console.log(e); }
+    }
+
+    function createFloatingText(x, y, text, isCrit = false, isBoss = false) {
+        const div = document.createElement('div');
+        div.className = 'floating-text';
+        div.innerText = text;
+        div.style.left = `${x - 20}px`;
+        div.style.top = `${y - 20}px`;
+        if (isCrit) div.style.color = '#ffaa44';
+        if (isBoss) div.style.color = '#ff6666';
+        div.style.fontSize = isCrit ? '1.8rem' : '1.3rem';
+        div.style.fontWeight = 'bold';
+        document.body.appendChild(div);
+        setTimeout(() => div.remove(), 800);
+    }
+
+    function createGlobalToast(msg, duration=1300) {
+        let toast = document.createElement('div');
+        toast.className = 'toast-msg';
+        toast.innerText = msg;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), duration);
+    }
+
+    // 增加分数 (考虑所有加成)
+    function addScore(amount, fromAuto = false) {
+        let finalAmount = amount;
+        if (Date.now() < state.tempRageEnd) finalAmount = Math.floor(finalAmount * state.tempRageMult);
+        let petBonus = 1 + (state.petHappy * 0.06);
+        finalAmount = Math.floor(finalAmount * petBonus);
+        if (state.dividendRate > 0 && !fromAuto) finalAmount = Math.floor(finalAmount * (1 + state.dividendRate * 0.05));
+        // 导师光环加成 (永久点击加成)
+        if (!fromAuto && state.mentorActive) finalAmount = Math.floor(finalAmount * (1 + state.mentorBonus * 0.1));
+        // 咖啡因爆发 (临时全收益翻倍)
+        if (Date.now() < state.coffeeEnd) finalAmount = Math.floor(finalAmount * 2);
+        
+        state.score += finalAmount;
+        updateUI();
+    }
+
+    function computeClickDamage() {
+        let base = state.clickPower;
+        let mult = 1;
+        let isCrit = false;
+        if (Math.random() < state.critChance) { isCrit = true; mult = state.critDamage; }
+        let comboBonus = 1 + Math.min(0.5, state.combo * 0.02);
+        let finalDamage = Math.floor(base * mult * comboBonus);
+        if (state.isBossMode) finalDamage *= 10;
+        return { damage: finalDamage, isCrit, comboBonus };
+    }
+
+    function updateCombo() {
+        const now = Date.now();
+        if (now - state.lastClickTime < 1200) {
+            state.combo = Math.min(state.combo + 1, 30);
+        } else {
+            state.combo = 0;
+        }
+        state.lastClickTime = now;
+        elComboSpan.innerText = state.combo;
+        comboIndicatorDiv.innerText = `🔥 ${state.combo}连击`;
+        if(state.combo >= 10) comboIndicatorDiv.style.color = "gold";
+        else comboIndicatorDiv.style.color = "cyan";
+    }
+
+    function handleClick(e) {
+        let clientX, clientY;
+        if (e.touches) { clientX = e.touches[0].clientX; clientY = e.touches[0].clientY; e.preventDefault(); }
+        else { clientX = e.clientX; clientY = e.clientY; }
+        updateCombo();
+        let { damage, isCrit } = computeClickDamage();
+        addScore(damage);
+        playSound('click');
+        let text = `+${damage}`;
+        if (isCrit) text = `💥暴击! +${damage}`;
+        if (state.isBossMode) text = `🤯暴走! +${damage}`;
+        createFloatingText(clientX, clientY, text, isCrit, state.isBossMode);
+        if (navigator.vibrate) navigator.vibrate(30);
+        clickBtn.style.transform = "scale(0.92)";
+        setTimeout(() => clickBtn.style.transform = "", 100);
+        if (!state.isBossMode) {
+            const icons = ['🐛', '💻', '⌨️', '⚙️', '🔧', '🖱️'];
+            clickBtn.querySelector('span').innerText = icons[Math.floor(Math.random() * icons.length)];
+        } else {
+            clickBtn.querySelector('span').innerHTML = "👺";
+        }
+        // 代码磁铁: 点击时有概率额外飘分
+        if(state.magnetActive && Math.random()<0.3){
+            let extra = Math.floor(state.clickPower * (1+state.combo*0.02));
+            addScore(extra);
+            createFloatingText(clientX+20, clientY-10, `🧲磁力+${extra}`, false);
+        }
+    }
+
+    clickBtn.addEventListener('click', handleClick);
+    clickBtn.addEventListener('touchstart', handleClick, { passive: false });
+
+    // 老板模式切换 (左下角连点6次触发, 无任何文字提示老板模式存在)
+    function toggleBossMode() {
+        state.isBossMode = !state.isBossMode;
+        if(state.isBossMode) {
+            document.body.classList.add('boss-mode');
+            elStatusText.innerText = "⚠️ 高压模式 · 收益暴增 ⚠️";
+            playSound('alert');
+            createGlobalToast("⚡ 极限挑战模式开启！收益10倍⚡", 1200);
+        } else {
+            document.body.classList.remove('boss-mode');
+            elStatusText.innerText = "🐞 修复 BUG 大作战 🛠️";
+            createGlobalToast("✨ 压力减轻，正常模式", 1000);
+        }
+        updateUI();
+    }
+
+    let bossTapCount = 0;
+    let bossTimer = null;
+    secretBossBtn.addEventListener('click', () => {
+        bossTapCount++;
+        if(bossTimer) clearTimeout(bossTimer);
+        bossTimer = setTimeout(() => { bossTapCount = 0; }, 800);
+        if(bossTapCount >= 6) {
+            toggleBossMode();
+            bossTapCount = 0;
+            if(navigator.vibrate) navigator.vibrate([100,50,100]);
+        }
+        secretBossBtn.style.transform = "scale(0.8)";
+        setTimeout(() => secretBossBtn.style.transform = "", 150);
+    });
+    secretBossBtn.addEventListener('touchstart', (e) => { e.preventDefault(); secretBossBtn.click(); });
+
+    function buyClickUpgrade() {
+        if (state.score >= state.costClick) {
+            state.score -= state.costClick;
+            state.clickPower += 1;
+            state.costClick = Math.floor(state.costClick * 1.5);
+            playSound('buy');
+            updateUI();
+            createFloatingText(window.innerWidth/2, window.innerHeight/2, "⌨️ 键盘升级!", false);
+        }
+    }
+    function buyAutoUpgrade() {
+        if (state.score >= state.costAuto) {
+            state.score -= state.costAuto;
+            state.autoRate += 5;
+            state.costAuto = Math.floor(state.costAuto * 1.3);
+            playSound('buy');
+            updateUI();
+        }
+    }
+    document.getElementById('btnUpgradeClick').onclick = buyClickUpgrade;
+    document.getElementById('btnUpgradeAuto').onclick = buyAutoUpgrade;
+
+    setInterval(() => {
+        if (state.autoRate > 0) {
+            addScore(state.autoRate, true);
+            if(Math.random()<0.3) createFloatingText(clickBtn.getBoundingClientRect().left+80, clickBtn.getBoundingClientRect().top+80, `⚙️+${state.autoRate}`, false);
+        }
+    }, 1000);
+
+    // ------------- 原有10个功能 + 新增5个共15个 -------------
+    // 1~10 原有略调整 (保持完整)
+    luckDrawBtn.onclick = () => {
+        if(state.score < 200) { createGlobalToast("💰 需要200 BUG积分!", 1000); return; }
+        state.score -= 200;
+        let prize = Math.random();
+        if(prize < 0.4) { let gain = 300 + Math.floor(Math.random()*400); state.score += gain; createGlobalToast(`🎉 轮盘: 获得 ${gain} 积分!`, 1200); }
+        else if(prize < 0.7) { state.critChance = Math.min(0.5, state.critChance+0.05); createGlobalToast(`✨ 暴击率提升5%! 现为${Math.floor(state.critChance*100)}%`, 1200); }
+        else if(prize < 0.85) { state.autoRate += 3; createGlobalToast(`🤖 实习生+3!`, 1200); }
+        else { state.clickPower += 2; createGlobalToast(`💪 点击伤害+2!`, 1200); }
+        updateUI(); playSound('buy');
+    };
+    nukeBtn.onclick = () => {
+        if(state.score < 1500) { createGlobalToast("❌ 核弹需要1500积分!", 1000); return; }
+        state.score -= 1500;
+        let bonusAuto = 20 + Math.floor(Math.random() * 20);
+        state.autoRate += bonusAuto;
+        createGlobalToast(`💣 核弹清bug! +${bonusAuto}/秒`, 1500);
+        updateUI();
+    };
+    timeWarpBtn.onclick = () => {
+        if(state.score < 800) { createGlobalToast("⏳ 需要800积分", 1000); return; }
+        state.score -= 800;
+        let warpStart = Date.now();
+        let interval = setInterval(() => {
+            if(Date.now() - warpStart > 5000) clearInterval(interval);
+            else addScore(state.autoRate * 2, true);
+        }, 1000);
+        createGlobalToast("⏩ 时间扭曲! 5秒内每秒自动收益+200%", 1500);
+        updateUI();
+    };
+    investBtn.onclick = () => {
+        if(state.score < 500) { createGlobalToast("本金不足500", 800); return; }
+        let investAmt = 500;
+        state.score -= investAmt;
+        let gainRate = 0.5 + Math.random() * 1.2;
+        let profit = Math.floor(investAmt * gainRate);
+        state.score += profit;
+        createGlobalToast(`📈 炒股获得 ${profit} 积分! (收益${Math.floor(gainRate*100)}%)`, 1500);
+        updateUI();
+    };
+    petBtn.onclick = () => {
+        if(state.score < 150) { createGlobalToast("需要150积分撸猫", 800); return; }
+        state.score -= 150;
+        state.petHappy = Math.min(5, state.petHappy+1);
+        petDisplay.innerText = `🐱 打工喵: 快乐+${state.petHappy} (+${state.petHappy*6}%伤害)`;
+        createGlobalToast(`🐈 猫咪开心! 伤害加成${state.petHappy*6}%`, 1200);
+        updateUI();
+    };
+    rageModeBtn.onclick = () => {
+        if(state.score < 600) { createGlobalToast("需要600积分", 800); return; }
+        state.score -= 600;
+        state.tempRageEnd = Date.now() + 15000;
+        state.tempRageMult = 1.8;
+        createGlobalToast("😈 临时狂暴15秒! 点击伤害x1.8", 1300);
+        updateUI();
+        setTimeout(() => { if(Date.now()>=state.tempRageEnd) createGlobalToast("狂暴结束", 800); }, 15000);
+    };
+    sharesBtn.onclick = () => {
+        if(state.score < 700) { createGlobalToast("需要700积分", 800); return; }
+        if(state.dividendRate >= 8) { createGlobalToast("分红已满级!", 800); return; }
+        state.score -= 700;
+        state.dividendRate = Math.min(8, state.dividendRate + 1);
+        createGlobalToast(`📊 分红等级 ${state.dividendRate}，点击收益+${state.dividendRate*5}%`, 1200);
+        updateUI();
+    };
+    function updateAchievement() {
+        if(state.score >= 10000) achievementBadge.innerText = "🏆 成就: 代码之神";
+        else if(state.score >= 5000) achievementBadge.innerText = "🏆 成就: 全栈宗师";
+        else if(state.score >= 2000) achievementBadge.innerText = "🏆 成就: 资深码农";
+        else achievementBadge.innerText = "🏆 成就: 新手码农";
+    }
+    const skins = ["🐛", "🤖", "👾", "💀", "⭐"];
+    skinBtn.onclick = () => {
+        state.skinIndex = (state.skinIndex+1)%skins.length;
+        clickBtn.querySelector('span').innerHTML = skins[state.skinIndex];
+        createGlobalToast(`🎨 皮肤: ${skins[state.skinIndex]}`, 800);
+    };
+    
+    // ========== 新增5个有趣功能 ==========
+    // 11. 咖啡因爆发 (消耗积分，30秒内所有收益翻倍)
+    coffeeBtn.onclick = () => {
+        if(state.score < 500) { createGlobalToast("需要500积分购买咖啡", 800); return; }
+        state.score -= 500;
+        state.coffeeEnd = Date.now() + 30000;
+        createGlobalToast("☕ 咖啡因爆发! 30秒内所有收益x2", 1500);
+        updateUI();
+        setTimeout(() => { if(Date.now()>=state.coffeeEnd) createGlobalToast("咖啡效果消失", 800); }, 30000);
+    };
+    // 12. 代码磁铁 (消耗积分, 永久激活点击时有30%概率额外获得一次基础点击伤害)
+    magnetBtn.onclick = () => {
+        if(state.magnetActive) { createGlobalToast("🧲 代码磁铁已经激活!", 800); return; }
+        if(state.score < 1200) { createGlobalToast("需要1200积分购买代码磁铁", 800); return; }
+        state.score -= 1200;
+        state.magnetActive = true;
+        createGlobalToast("🧲 代码磁铁激活! 点击时30%概率产生额外收益", 1300);
+        updateUI();
+    };
+    // 13. 超级彩票 (高投入高回报)
+    lotteryBtn.onclick = () => {
+        if(state.score < 1000) { createGlobalToast("需要1000积分买彩票", 800); return; }
+        state.score -= 1000;
+        let lucky = Math.random();
+        if(lucky < 0.1) { let jackpot = 8000; state.score += jackpot; createGlobalToast(`🎉🎉 头等奖!!! 获得 ${jackpot} 积分!`, 2000); }
+        else if(lucky < 0.3) { let win = 2000; state.score += win; createGlobalToast(`🏆 二等奖! +${win}积分`, 1500); }
+        else if(lucky < 0.6) { let win = 600; state.score += win; createGlobalToast(`⭐ 三等奖 +${win}`, 1200); }
+        else { createGlobalToast(`😢 谢谢参与, 下次好运`, 1000); }
+        updateUI();
+    };
+    // 14. 导师光环 (永久增加点击伤害20% 可叠加5次)
+    mentorBtn.onclick = () => {
+        if(state.mentorBonus >= 5) { createGlobalToast("导师已经满级(+50%点击伤害)", 800); return; }
+        if(state.score < 800) { createGlobalToast("需要800积分聘请导师", 800); return; }
+        state.score -= 800;
+        state.mentorActive = true;
+        state.mentorBonus = Math.min(5, state.mentorBonus + 1);
+        createGlobalToast(`👨‍🏫 导师光环提升! 点击伤害永久+${state.mentorBonus*10}%`, 1300);
+        updateUI();
+    };
+    // 15. 转世重生 (重置大部分进度但保留永久导师和磁铁及分红等级, 并返还大量积分)
+    resetBtn.onclick = () => {
+        if(state.score < 5000) { createGlobalToast("需要5000积分才能转世重生", 1000); return; }
+        if(confirm("⚠️ 转世重生将重置积分、点击力、自动收益、连击、宠物、临时状态，但保留导师光环、代码磁铁、分红等级和暴击率! 并获得重生奖励。确定吗？")) {
+            let bonus = Math.floor(state.score * 0.3);
+            let preservedCrit = state.critChance;
+            let preservedMentor = state.mentorActive;
+            let preservedMentorBonus = state.mentorBonus;
+            let preservedMagnet = state.magnetActive;
+            let preservedDividend = state.dividendRate;
+            
+            state.score = 2000 + bonus; // 重生启动资金
+            state.clickPower = 1;
+            state.autoRate = 0;
+            state.costClick = 100;
+            state.costAuto = 500;
+            state.combo = 0;
+            state.petHappy = 0;
+            state.tempRageEnd = 0;
+            state.coffeeEnd = 0;
+            state.critChance = preservedCrit;
+            state.mentorActive = preservedMentor;
+            state.mentorBonus = preservedMentorBonus;
+            state.magnetActive = preservedMagnet;
+            state.dividendRate = preservedDividend;
+            state.isBossMode = false;
+            document.body.classList.remove('boss-mode');
+            elStatusText.innerText = "🐞 修复 BUG 大作战 🛠️";
+            
+            updateUI();
+            createGlobalToast(`🔄 转世重生! 获得重生奖金 ${bonus} 积分, 天赋保留!`, 2000);
+            playSound('alert');
+        }
+    };
+    
+    // 自动保存进度 (localStorage)
+    function saveGame() {
+        const saveData = {
+            score: state.score,
+            clickPower: state.clickPower,
+            autoRate: state.autoRate,
+            costClick: state.costClick,
+            costAuto: state.costAuto,
+            critChance: state.critChance,
+            critDamage: state.critDamage,
+            petHappy: state.petHappy,
+            dividendRate: state.dividendRate,
+            magnetActive: state.magnetActive,
+            mentorActive: state.mentorActive,
+            mentorBonus: state.mentorBonus,
+            skinIndex: state.skinIndex,
+            isBossMode: false,   // 不保存狂暴模式，避免奇怪
+            version: 2
+        };
+        localStorage.setItem('cyberWorkerSave', JSON.stringify(saveData));
+        saveTipSpan.style.opacity = '1';
+        setTimeout(() => { saveTipSpan.style.opacity = '0.5'; }, 800);
+    }
+    
+    function loadGame() {
+        const raw = localStorage.getItem('cyberWorkerSave');
+        if(raw) {
+            try {
+                const data = JSON.parse(raw);
+                state.score = data.score || 0;
+                state.clickPower = data.clickPower || 1;
+                state.autoRate = data.autoRate || 0;
+                state.costClick = data.costClick || 100;
+                state.costAuto = data.costAuto || 500;
+                state.critChance = data.critChance || 0.15;
+                state.critDamage = data.critDamage || 2.0;
+                state.petHappy = data.petHappy || 0;
+                state.dividendRate = data.dividendRate || 0;
+                state.magnetActive = data.magnetActive || false;
+                state.mentorActive = data.mentorActive || false;
+                state.mentorBonus = data.mentorBonus || 0;
+                state.skinIndex = data.skinIndex || 0;
+                if(state.mentorActive && state.mentorBonus===0) state.mentorBonus=1;
+                updateUI();
+                createGlobalToast("💾 进度已加载", 1000);
+            } catch(e) { console.warn(e); }
+        }
+        petDisplay.innerText = `🐱 打工喵: 快乐+${state.petHappy} (+${state.petHappy*6}%伤害)`;
+        if(state.magnetActive) magnetBtn.style.borderColor = "#0f0";
+        if(state.mentorActive) mentorBtn.style.borderColor = "#ffaa88";
+        clickBtn.querySelector('span').innerHTML = skins[state.skinIndex] || "🐛";
+    }
+    
+    setInterval(() => { saveGame(); }, 30000);
+    window.addEventListener('beforeunload', () => { saveGame(); });
+    loadGame();
+    
+    function updateUI() {
+        elScore.innerText = Math.floor(state.score).toLocaleString();
+        elCps.innerText = state.autoRate;
+        document.getElementById('costClick').innerText = state.costClick.toLocaleString();
+        document.getElementById('costAuto').innerText = state.costAuto.toLocaleString();
+        let finalCrit = state.critChance * 100;
+        elCritMult.innerText = `${Math.floor(finalCrit)}%/${state.critDamage.toFixed(1)}x`;
+        document.getElementById('btnUpgradeClick').disabled = state.score < state.costClick;
+        document.getElementById('btnUpgradeAuto').disabled = state.score < state.costAuto;
+        petDisplay.innerText = `🐱 打工喵: +${state.petHappy*6}%伤害`;
+        updateAchievement();
+        if(state.magnetActive) magnetBtn.style.borderColor = "#0f0";
+        if(state.mentorActive) mentorBtn.style.borderColor = "#ffaa88";
+    }
+    updateUI();
+    setInterval(() => updateAchievement(), 5000);
+</script>
+</body>
+</html>
