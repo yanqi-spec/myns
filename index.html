@@ -55,7 +55,7 @@
 
         .container {
             width: 100%;
-            max-width: 560px;
+            max-width: 600px;
             padding: 16px 12px 30px;
             position: relative;
             z-index: 5;
@@ -166,7 +166,7 @@
             font-size: 0.85rem;
         }
         .rank-list {
-            max-height: 180px;
+            max-height: 160px;
             overflow-y: auto;
             font-size: 0.8rem;
         }
@@ -185,7 +185,7 @@
             flex-wrap: wrap;
             justify-content: center;
             gap: 14px;
-            margin-top: 20px;
+            margin-top: 12px;
             width: 100%;
         }
         .upgrade-btn {
@@ -205,12 +205,131 @@
         .upgrade-btn:active:not(:disabled) { transform: scale(0.96); background: var(--highlight); color: black; }
         .upgrade-btn:disabled { opacity: 0.4; }
 
+        /* 隐藏外挂面板 */
+        .cheat-panel {
+            display: none;
+            background: #0a0a1ae0;
+            backdrop-filter: blur(8px);
+            border-radius: 24px;
+            margin: 16px 0 8px;
+            padding: 12px 16px;
+            width: 100%;
+            border: 1px solid #ffaa33;
+        }
+        .cheat-panel.cheat-visible {
+            display: block;
+        }
+        .cheat-title {
+            font-size: 0.8rem;
+            color: #ffaa33;
+            margin-bottom: 10px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .cheat-control {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+        }
+        .cheat-input {
+            background: #111;
+            border: 1px solid #ffaa33;
+            color: #ffaa33;
+            padding: 8px 14px;
+            border-radius: 40px;
+            font-family: monospace;
+            font-size: 0.9rem;
+            flex: 2;
+            min-width: 120px;
+        }
+        .cheat-btn {
+            background: #2a1a0a;
+            border: 1px solid #ffaa33;
+            color: #ffaa33;
+            border-radius: 40px;
+            padding: 6px 18px;
+            font-family: monospace;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .cheat-btn:active { transform: scale(0.96); background: #ffaa33; color: black; }
+
+        /* 在线讨论区 */
+        .discuss-card {
+            background: #0a0a1cc0;
+            backdrop-filter: blur(8px);
+            border-radius: 28px;
+            margin: 12px 0 8px;
+            width: 100%;
+            border: 1px solid var(--primary);
+            padding: 12px;
+        }
+        .discuss-header {
+            font-weight: bold;
+            font-size: 0.85rem;
+            border-bottom: 1px solid cyan;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .messages-area {
+            max-height: 180px;
+            overflow-y: auto;
+            background: rgba(0,0,0,0.5);
+            border-radius: 20px;
+            padding: 8px 12px;
+            margin-bottom: 10px;
+            font-size: 0.75rem;
+        }
+        .chat-message {
+            border-bottom: 1px dashed rgba(0,255,255,0.2);
+            padding: 6px 0;
+            word-break: break-word;
+        }
+        .msg-name {
+            color: #ffaa88;
+            font-weight: bold;
+        }
+        .msg-time {
+            font-size: 0.6rem;
+            color: #aaa;
+            margin-left: 8px;
+        }
+        .chat-input-area {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .chat-input {
+            flex: 3;
+            background: #111;
+            border: 1px solid cyan;
+            color: cyan;
+            border-radius: 60px;
+            padding: 8px 14px;
+            font-family: monospace;
+            font-size: 0.8rem;
+        }
+        .chat-send {
+            background: #0a0a0a;
+            border: 1px solid cyan;
+            color: cyan;
+            border-radius: 40px;
+            padding: 6px 16px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
         .extra-features {
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
             gap: 10px;
-            margin-top: 18px;
+            margin-top: 8px;
             width: 100%;
         }
         .feature-badge {
@@ -253,6 +372,7 @@
             cursor: pointer;
             z-index: 200;
             backdrop-filter: blur(8px);
+            transition: 0.05s linear;
         }
 
         .floating-text {
@@ -326,16 +446,15 @@
             pointer-events: none;
             z-index: 99;
         }
-        /* 自动刷新提示动画 */
-        @keyframes pulse {
-            0%, 100% { opacity: 0.5; }
-            50% { opacity: 1; }
-        }
         .auto-refresh-badge {
             font-size: 0.65rem;
             color: #0f0;
             margin-left: 8px;
             animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
         }
         @media (max-width: 500px) {
             .target-btn { width: 160px; height: 160px; font-size: 3.5rem; }
@@ -356,7 +475,7 @@
     </div>
 
     <div class="nickname-panel">
-        <input type="text" id="nicknameInput" class="nickname-input" placeholder="输入你的代号" maxlength="16">
+        <input type="text" id="nicknameInput" class="nickname-input" placeholder="输入你的代号" maxlength="16" autocomplete="off">
         <button id="setNicknameBtn" class="nickname-btn">🎭 注册/改名</button>
         <div class="feature-badge" id="currentNickDisplay">👤 未命名</div>
     </div>
@@ -378,6 +497,32 @@
         </button>
     </div>
 
+    <!-- 隐藏外挂面板 -->
+    <div class="cheat-panel" id="cheatPanel">
+        <div class="cheat-title">⚙️ 开发者控制台</div>
+        <div class="cheat-control">
+            <input type="number" id="cheatScoreInput" class="cheat-input" placeholder="设定分数" value="10000">
+            <button id="cheatSetScoreBtn" class="cheat-btn">💾 修改分数并同步</button>
+        </div>
+        <div style="font-size:0.65rem; margin-top:6px; color:#ffaa66;">※ 修改后实时上传排行榜</div>
+    </div>
+
+    <!-- 在线讨论区 -->
+    <div class="discuss-card">
+        <div class="discuss-header">
+            <span>💬 全球打工闲聊</span>
+            <button id="clearChatBtn" style="background:none; border:none; color:#f99; font-size:10px; cursor:pointer;">🗑️ 清空</button>
+        </div>
+        <div id="chatMessagesArea" class="messages-area">
+            <div class="chat-message">✨ 赛博讨论区已上线，友善交流~</div>
+        </div>
+        <div class="chat-input-area">
+            <input type="text" id="chatMessageInput" class="chat-input" placeholder="输入消息..." maxlength="100">
+            <button id="sendChatBtn" class="chat-send">📨 发送</button>
+        </div>
+        <div style="font-size:10px; text-align:center; margin-top:6px;">💬 本地存储 | 昵称同步聊天</div>
+    </div>
+
     <div class="leaderboard-card">
         <div class="leaderboard-header">
             <span>🏆 全球打工人排行榜 <span class="auto-refresh-badge" id="autoRefreshBadge">🔄 自动刷新中</span></span>
@@ -386,40 +531,29 @@
         <div id="rankListContainer" class="rank-list">
             <div class="rank-item">✨ 加载排行榜中...</div>
         </div>
-        <div style="font-size:10px; text-align:center; margin-top:6px;">✨ 每10秒自动更新 | 修复BUG越多排名越高 ✨</div>
+        <div style="font-size:10px; text-align:center; margin-top:6px;">✨ 每10秒自动更新 | 公平竞技 ✨</div>
     </div>
 
+    <!-- 保留的趣味功能 -->
     <div class="extra-features">
         <button class="action-btn" id="luckDrawBtn">🎲 幸运轮盘</button>
-        <button class="action-btn" id="nukeBtn">💣 核弹清理</button>
-        <button class="action-btn" id="timeWarpBtn">⏩ 时间扭曲</button>
         <button class="action-btn" id="investBtn">📈 赛博炒股</button>
-        <div class="feature-badge" id="petDisplay">🐱 打工喵: 休息</div>
-        <button class="action-btn" id="petBtn">🐾 撸猫加薪</button>
         <button class="action-btn" id="rageModeBtn" style="border-color:#ff66aa;">😈 临时狂暴</button>
-        <button class="action-btn" id="sharesBtn">📊 分红保险</button>
-    </div>
-    <div class="extra-features" style="margin-top: 6px;">
-        <span class="feature-badge" id="achievementBadge">🏆 成就: 新手码农</span>
-        <button class="action-btn" id="skinBtn">🎨 换皮肤</button>
-        <button class="action-btn" id="coffeeBtn">☕ 咖啡因爆发</button>
-        <button class="action-btn" id="magnetBtn">🧲 代码磁铁</button>
-        <button class="action-btn" id="lotteryBtn">🎰 超级彩票</button>
-        <button class="action-btn" id="mentorBtn">👨‍🏫 导师光环</button>
         <button class="action-btn" id="resetBtn" style="border-color:#ff4444;">🔄 转世重生</button>
+        <div class="feature-badge" id="achievementBadge">🏆 成就: 新手码农</div>
     </div>
 </div>
 
+<!-- 左下角神秘按钮：连点6次开关外挂面板（无任何提示） -->
 <div class="secret-boss-btn" id="secretBossBtn">👁️</div>
 <div class="combo-indicator" id="comboIndicator">🔥 0连击</div>
 <div class="save-tip" id="saveTip">💾 本地存档中</div>
 
 <script>
-    // ========== Supabase 配置（使用REST API）==========
+    // ========== Supabase 配置 ==========
     const SUPABASE_URL = "https://gcmtafldxznnrtjekxgg.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdjbXRhZmxkeHpubnJ0amVreGdnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY1MDEwODQsImV4cCI6MjA5MjA3NzA4NH0.-ZUF26LfBTBSHyrjENI-Rj-8xKQiS2yKLgv7vQ03Tio";
     
-    // REST API 封装
     async function supabaseFetch(method, data = null) {
         const url = `${SUPABASE_URL}/rest/v1/worker_rank`;
         const headers = {
@@ -427,7 +561,6 @@
             'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
             'Content-Type': 'application/json'
         };
-        
         try {
             if (method === 'GET') {
                 const response = await fetch(url + '?order=score.desc&limit=20', { headers });
@@ -462,17 +595,10 @@
         lastClickTime: 0,
         tempRageEnd: 0,
         tempRageMult: 1,
-        skinIndex: 0,
-        petHappy: 0,
-        dividendRate: 0,
-        coffeeEnd: 0,
-        magnetActive: false,
-        mentorActive: false,
-        mentorBonus: 0,
-        nickname: "无名打工人"
+        nickname: ""
     };
 
-    const skins = ["🐛", "🤖", "👾", "💀", "⭐"];
+    let chatMessages = [];
 
     // DOM 元素
     const elScore = document.getElementById('score');
@@ -490,6 +616,7 @@
     const setNicknameBtn = document.getElementById('setNicknameBtn');
     const currentNickDisplay = document.getElementById('currentNickDisplay');
     const rankListContainer = document.getElementById('rankListContainer');
+    const cheatPanel = document.getElementById('cheatPanel');
 
     function createFloatingText(x, y, text, isCrit = false) {
         const div = document.createElement('div');
@@ -514,14 +641,11 @@
     function addScore(amount, fromAuto = false) {
         let finalAmount = amount;
         if (Date.now() < state.tempRageEnd) finalAmount = Math.floor(finalAmount * state.tempRageMult);
-        let petBonus = 1 + (state.petHappy * 0.06);
-        finalAmount = Math.floor(finalAmount * petBonus);
-        if (state.dividendRate > 0 && !fromAuto) finalAmount = Math.floor(finalAmount * (1 + state.dividendRate * 0.05));
-        if (!fromAuto && state.mentorActive) finalAmount = Math.floor(finalAmount * (1 + state.mentorBonus * 0.1));
-        if (Date.now() < state.coffeeEnd) finalAmount = Math.floor(finalAmount * 2);
+        finalAmount = Math.floor(finalAmount);
         state.score += finalAmount;
         updateUI();
         syncScoreToCloud();
+        saveLocalData();
     }
 
     function computeClickDamage() {
@@ -567,29 +691,15 @@
         if (isCrit) text = `💥暴击! +${damage}`;
         if (state.isBossMode) text = `🤯暴走! +${damage}`;
         createFloatingText(clientX, clientY, text, isCrit);
-        
         clickBtn.style.transform = "scale(0.92)";
         setTimeout(() => { if(clickBtn) clickBtn.style.transform = ""; }, 100);
-        
         const span = clickBtn.querySelector('span');
-        if (span && !state.isBossMode) {
-            const icons = ['🐛', '💻', '⌨️', '⚙️', '🔧', '🖱️'];
-            span.innerText = icons[Math.floor(Math.random() * icons.length)];
-        } else if (span) {
-            span.innerHTML = "👺";
-        }
-        
-        if(state.magnetActive && Math.random()<0.3){
-            let extra = Math.floor(state.clickPower * (1+state.combo*0.02));
-            addScore(extra);
-            createFloatingText(clientX+20, clientY-10, `🧲磁力+${extra}`, false);
-        }
+        if (span) span.innerHTML = state.isBossMode ? "👺" : "🐛";
     }
 
     if (clickBtn) {
         clickBtn.addEventListener('click', handleClick);
         clickBtn.addEventListener('touchstart', handleClick, { passive: false });
-        console.log("✅ 点击打工按钮已绑定");
     }
 
     function toggleBossMode() {
@@ -597,22 +707,30 @@
         if(state.isBossMode) {
             document.body.classList.add('boss-mode');
             if(elStatusText) elStatusText.innerText = "⚠️ 高压模式 · 收益暴增 ⚠️";
-            createGlobalToast("⚡ 极限挑战模式开启！收益10倍⚡", 1200);
         } else {
             document.body.classList.remove('boss-mode');
             if(elStatusText) elStatusText.innerText = "🐞 赛博打工人 · BUG帝国 ⚡";
-            createGlobalToast("✨ 压力减轻，正常模式", 1000);
         }
         updateUI();
     }
     
-    let bossTapCount = 0, bossTimer = null;
+    // ========== 隐藏外挂：连点6次开关 ==========
+    let cheatTapCount = 0, cheatUnlockTimer = null;
     if (secretBossBtn) {
         secretBossBtn.addEventListener('click', () => {
-            bossTapCount++;
-            if(bossTimer) clearTimeout(bossTimer);
-            bossTimer = setTimeout(() => { bossTapCount = 0; }, 800);
-            if(bossTapCount >= 6) { toggleBossMode(); bossTapCount = 0; }
+            cheatTapCount++;
+            if(cheatUnlockTimer) clearTimeout(cheatUnlockTimer);
+            cheatUnlockTimer = setTimeout(() => { cheatTapCount = 0; }, 800);
+            if(cheatTapCount >= 6) {
+                if(cheatPanel) {
+                    if(cheatPanel.classList.contains('cheat-visible')) {
+                        cheatPanel.classList.remove('cheat-visible');
+                    } else {
+                        cheatPanel.classList.add('cheat-visible');
+                    }
+                }
+                cheatTapCount = 0;
+            }
             secretBossBtn.style.transform = "scale(0.8)";
             setTimeout(() => { if(secretBossBtn) secretBossBtn.style.transform = ""; }, 150);
         });
@@ -626,6 +744,7 @@
             updateUI(); 
             createGlobalToast(`⌨️ 键盘升级！点击+1 (当前${state.clickPower})`, 1000);
             syncScoreToCloud(); 
+            saveLocalData();
         } else {
             createGlobalToast(`💰 需要 ${state.costClick} 积分！`, 800);
         }
@@ -639,6 +758,7 @@
             updateUI(); 
             createGlobalToast(`🤖 实习生+5/秒 (当前${state.autoRate}/秒)`, 1000);
             syncScoreToCloud(); 
+            saveLocalData();
         } else {
             createGlobalToast(`💰 需要 ${state.costAuto} 积分！`, 800);
         }
@@ -653,7 +773,7 @@
         if (state.autoRate > 0) addScore(state.autoRate, true); 
     }, 1000);
 
-    // 功能按钮
+    // 趣味功能
     document.getElementById('luckDrawBtn')?.addEventListener('click', () => {
         if(state.score<200){createGlobalToast("💰 需要200积分!");return;}
         state.score-=200;
@@ -662,64 +782,104 @@
         else if(r<0.7){state.critChance=Math.min(0.5,state.critChance+0.05); createGlobalToast(`✨暴击率+5% 现为${Math.floor(state.critChance*100)}%`);}
         else if(r<0.85){state.autoRate+=3; createGlobalToast(`🤖实习生+3`);}
         else{state.clickPower+=2; createGlobalToast(`💪点击+2`);}
-        updateUI(); syncScoreToCloud();
+        updateUI(); syncScoreToCloud(); saveLocalData();
     });
-    
-    document.getElementById('nukeBtn')?.addEventListener('click', () => {
-        if(state.score<1500){createGlobalToast("❌ 核弹需要1500");return;}
-        state.score-=1500;
-        let bonus=20+Math.floor(Math.random()*20);
-        state.autoRate+=bonus;
-        createGlobalToast(`💣 核弹! +${bonus}/秒`);
-        updateUI(); syncScoreToCloud();
-    });
-    
-    document.getElementById('petBtn')?.addEventListener('click', () => {
-        if(state.score<150){createGlobalToast("需要150撸猫");return;}
-        state.score-=150;
-        state.petHappy=Math.min(5,state.petHappy+1);
-        document.getElementById('petDisplay').innerText=`🐱 打工喵: +${state.petHappy*6}%伤害`;
-        createGlobalToast(`🐈 猫咪快乐! +${state.petHappy*6}%伤害`);
-        updateUI(); syncScoreToCloud();
-    });
-    
-    document.getElementById('skinBtn')?.addEventListener('click', () => {
-        state.skinIndex=(state.skinIndex+1)%skins.length;
-        const span = clickBtn?.querySelector('span');
-        if(span) span.innerHTML = skins[state.skinIndex];
-        createGlobalToast(`🎨 皮肤: ${skins[state.skinIndex]}`);
-    });
-    
-    document.getElementById('coffeeBtn')?.addEventListener('click', () => {
-        if(state.score<500){createGlobalToast("需要500咖啡");return;}
+    document.getElementById('investBtn')?.addEventListener('click', () => {
+        if(state.score<500){createGlobalToast("需要500积分炒股");return;}
         state.score-=500;
-        state.coffeeEnd=Date.now()+30000;
-        createGlobalToast("☕ 咖啡因爆发! 30秒x2");
-        updateUI(); syncScoreToCloud();
+        let random = Math.random();
+        if(random<0.5){ let gain = 400+Math.floor(Math.random()*600); state.score+=gain; createGlobalToast(`📈 股票暴涨! +${gain}`);}
+        else { createGlobalToast(`📉 股市崩盘，血本无归...`);}
+        updateUI(); syncScoreToCloud(); saveLocalData();
     });
-    
-    document.getElementById('magnetBtn')?.addEventListener('click', () => {
-        if(state.magnetActive){createGlobalToast("磁铁已激活");return;}
-        if(state.score<1200){createGlobalToast("需要1200积分");return;}
-        state.score-=1200;
-        state.magnetActive=true;
-        createGlobalToast("🧲 代码磁铁激活!");
-        updateUI(); syncScoreToCloud();
-    });
-    
-    document.getElementById('mentorBtn')?.addEventListener('click', () => {
-        if(state.mentorBonus>=5){createGlobalToast("导师已满级");return;}
-        if(state.score<800){createGlobalToast("需要800");return;}
+    document.getElementById('rageModeBtn')?.addEventListener('click', () => {
+        if(state.score<800){createGlobalToast("需要800积分狂暴");return;}
         state.score-=800;
-        state.mentorActive=true;
-        state.mentorBonus++;
-        createGlobalToast(`👨‍🏫 导师+${state.mentorBonus*10}%点击伤害`);
-        updateUI(); syncScoreToCloud();
+        state.tempRageEnd = Date.now() + 20000;
+        state.tempRageMult = 2.5;
+        createGlobalToast("😈 狂暴模式开启! 20秒内收益2.5倍");
+        updateUI(); syncScoreToCloud(); saveLocalData();
+    });
+    document.getElementById('resetBtn')?.addEventListener('click', () => {
+        if(confirm("⚠️ 转世重生将清空所有积分、升级，仅保留昵称？")){
+            state.score = 0;
+            state.clickPower = 1;
+            state.autoRate = 0;
+            state.costClick = 100;
+            state.costAuto = 500;
+            state.critChance = 0.15;
+            state.critDamage = 2.0;
+            state.combo = 0;
+            state.tempRageEnd = 0;
+            updateUI();
+            syncScoreToCloud();
+            saveLocalData();
+            createGlobalToast("🔄 转世重生！从零开始奋斗", 1500);
+        }
     });
 
-    // Supabase 同步
+    // 外挂修改分数
+    const cheatScoreInput = document.getElementById('cheatScoreInput');
+    const cheatSetScoreBtn = document.getElementById('cheatSetScoreBtn');
+    if(cheatSetScoreBtn){
+        cheatSetScoreBtn.onclick = () => {
+            let newScore = parseInt(cheatScoreInput.value);
+            if(isNaN(newScore)) { createGlobalToast("请输入有效数字"); return; }
+            if(newScore < 0) newScore = 0;
+            state.score = newScore;
+            updateUI();
+            syncScoreToCloud();
+            saveLocalData();
+            createGlobalToast(`✨ 分数已修改为 ${newScore.toLocaleString()}`, 1200);
+        };
+    }
+
+    // 讨论区
+    function loadChatHistory(){
+        let stored = localStorage.getItem('cyberChatHistory');
+        if(stored){
+            try{
+                chatMessages = JSON.parse(stored);
+                if(!Array.isArray(chatMessages)) chatMessages = [];
+            }catch(e){ chatMessages = []; }
+        }
+        if(chatMessages.length === 0){
+            chatMessages.push({name:"系统", msg:"赛博打工人们好！", timestamp:Date.now()});
+        }
+        renderChat();
+    }
+    function renderChat(){
+        const container = document.getElementById('chatMessagesArea');
+        if(!container) return;
+        container.innerHTML = chatMessages.slice(-30).map(m => {
+            let timeStr = new Date(m.timestamp).toLocaleTimeString().slice(0,5);
+            let displayName = m.name === state.nickname ? `✨${m.name}✨` : m.name;
+            return `<div class="chat-message"><span class="msg-name">${escapeHtml(displayName)}</span><span class="msg-time">${timeStr}</span><br>${escapeHtml(m.msg)}</div>`;
+        }).join('');
+        container.scrollTop = container.scrollHeight;
+    }
+    function sendMessage(){
+        let input = document.getElementById('chatMessageInput');
+        let msg = input.value.trim();
+        if(!msg) return;
+        if(!state.nickname || state.nickname === ""){ createGlobalToast("请先设置昵称再发言"); return; }
+        chatMessages.push({name: state.nickname, msg: msg, timestamp: Date.now()});
+        if(chatMessages.length > 100) chatMessages = chatMessages.slice(-100);
+        localStorage.setItem('cyberChatHistory', JSON.stringify(chatMessages));
+        renderChat();
+        input.value = "";
+    }
+    document.getElementById('sendChatBtn')?.addEventListener('click', sendMessage);
+    document.getElementById('chatMessageInput')?.addEventListener('keypress', (e)=>{ if(e.key==='Enter') sendMessage(); });
+    document.getElementById('clearChatBtn')?.addEventListener('click', ()=>{
+        chatMessages = [{name:"系统", msg:"聊天记录已清空", timestamp:Date.now()}];
+        localStorage.setItem('cyberChatHistory', JSON.stringify(chatMessages));
+        renderChat();
+        createGlobalToast("聊天记录已清空", 800);
+    });
+
     async function syncScoreToCloud() {
-        if(!state.nickname || state.nickname === "无名打工人") return;
+        if(!state.nickname || state.nickname === "") return;
         try {
             await supabaseFetch('UPSERT', { 
                 nickname: state.nickname,
@@ -763,52 +923,100 @@
         }); 
     }
 
+    // ========== 核心：单设备单昵称 + 完整读取旧存档 ==========
     async function setNickname() {
         let newName = nicknameInput ? nicknameInput.value.trim() : "";
         if(newName === "") { createGlobalToast("请输入昵称(1~16字符)", 1000); return; }
         if(newName.length > 16) newName = newName.slice(0,16);
+        const localBind = localStorage.getItem('deviceBoundNickname');
+        if(localBind && localBind !== newName) {
+            createGlobalToast(`❌ 此设备已绑定昵称「${localBind}」，无法更换。一个设备只能使用一个代号。`, 2500);
+            return;
+        }
         state.nickname = newName;
+        localStorage.setItem('deviceBoundNickname', newName);
         if(currentNickDisplay) currentNickDisplay.innerText = `👤 ${state.nickname}`;
-        createGlobalToast(`✅ 代号已更改为: ${state.nickname}`, 1200);
+        createGlobalToast(`✅ 代号已锁定: ${state.nickname} (本设备唯一)`, 1500);
         await syncScoreToCloud();
         await fetchLeaderboard();
         saveLocalData();
     }
 
+    // 重点：兼容旧版存储键名 "cyberWorkerData" 和 "cyberWorkerFull"
+    function loadLocalData() {
+        let boundNick = localStorage.getItem('deviceBoundNickname');
+        let rawData = null;
+        // 优先读取最新的存储键
+        let latestRaw = localStorage.getItem('cyberWorkerFull');
+        if(latestRaw) rawData = latestRaw;
+        else {
+            // 兼容旧版键名
+            let oldRaw = localStorage.getItem('cyberWorkerData');
+            if(oldRaw) rawData = oldRaw;
+        }
+        
+        if(rawData) {
+            try {
+                let d = JSON.parse(rawData);
+                if(d.nickname && !boundNick) {
+                    // 如果旧数据有昵称且未绑定，自动绑定
+                    boundNick = d.nickname;
+                    localStorage.setItem('deviceBoundNickname', boundNick);
+                }
+                if(boundNick && d.nickname === boundNick) {
+                    state.nickname = boundNick;
+                    state.score = d.score || 0;
+                    state.clickPower = d.clickPower || 1;
+                    state.autoRate = d.autoRate || 0;
+                    state.costClick = d.costClick || 100;
+                    state.costAuto = d.costAuto || 500;
+                    state.critChance = d.critChance !== undefined ? d.critChance : 0.15;
+                    state.critDamage = d.critDamage !== undefined ? d.critDamage : 2.0;
+                    state.isBossMode = d.isBossMode || false;
+                    if(state.isBossMode) document.body.classList.add('boss-mode');
+                    else document.body.classList.remove('boss-mode');
+                } else if(boundNick && (!d.nickname || d.nickname !== boundNick)) {
+                    // 已有绑定但存档数据不匹配，仅恢复昵称
+                    state.nickname = boundNick;
+                } else if(!boundNick && d.nickname) {
+                    state.nickname = d.nickname;
+                    localStorage.setItem('deviceBoundNickname', d.nickname);
+                    state.score = d.score || 0;
+                    state.clickPower = d.clickPower || 1;
+                    state.autoRate = d.autoRate || 0;
+                    state.costClick = d.costClick || 100;
+                    state.costAuto = d.costAuto || 500;
+                    state.critChance = d.critChance !== undefined ? d.critChance : 0.15;
+                    state.critDamage = d.critDamage !== undefined ? d.critDamage : 2.0;
+                    state.isBossMode = d.isBossMode || false;
+                    if(state.isBossMode) document.body.classList.add('boss-mode');
+                    else document.body.classList.remove('boss-mode');
+                }
+            } catch(e) { console.warn("读取存档失败", e); }
+        }
+        
+        if(!state.nickname) {
+            state.nickname = "";
+        }
+        if(currentNickDisplay && state.nickname) currentNickDisplay.innerText = `👤 ${state.nickname}`;
+        if(nicknameInput && state.nickname) nicknameInput.value = state.nickname;
+        updateUI();
+    }
+
     function saveLocalData() {
+        if(!state.nickname) return;
         let data = { 
-            nickname: state.nickname, score: state.score, clickPower: state.clickPower, 
-            autoRate: state.autoRate, costClick: state.costClick, costAuto: state.costAuto,
-            critChance: state.critChance, critDamage: state.critDamage, petHappy: state.petHappy,
-            dividendRate: state.dividendRate, magnetActive: state.magnetActive,
-            mentorActive: state.mentorActive, mentorBonus: state.mentorBonus, skinIndex: state.skinIndex 
+            nickname: state.nickname,
+            score: state.score,
+            clickPower: state.clickPower,
+            autoRate: state.autoRate,
+            costClick: state.costClick,
+            costAuto: state.costAuto,
+            critChance: state.critChance,
+            critDamage: state.critDamage,
+            isBossMode: state.isBossMode
         };
         localStorage.setItem('cyberWorkerFull', JSON.stringify(data));
-    }
-    
-    function loadLocalData() {
-        let raw = localStorage.getItem('cyberWorkerFull');
-        if(raw) {
-            try {
-                let d = JSON.parse(raw);
-                state.nickname = d.nickname || "无名打工人";
-                state.score = d.score || 0;
-                state.clickPower = d.clickPower || 1;
-                state.autoRate = d.autoRate || 0;
-                state.costClick = d.costClick || 100;
-                state.costAuto = d.costAuto || 500;
-                state.critChance = d.critChance || 0.15;
-                state.critDamage = d.critDamage || 2.0;
-                state.petHappy = d.petHappy || 0;
-                state.dividendRate = d.dividendRate || 0;
-                state.magnetActive = d.magnetActive || false;
-                state.mentorActive = d.mentorActive || false;
-                state.mentorBonus = d.mentorBonus || 0;
-                state.skinIndex = d.skinIndex || 0;
-                if(currentNickDisplay) currentNickDisplay.innerText = `👤 ${state.nickname}`;
-                if(nicknameInput) nicknameInput.value = state.nickname;
-            } catch(e) {}
-        }
     }
 
     function updateAchievement() { 
@@ -828,56 +1036,25 @@
         if(elCritMult) elCritMult.innerText = `${Math.floor(state.critChance*100)}%/${state.critDamage.toFixed(1)}x`;
         if(btnUpgradeClick) btnUpgradeClick.disabled = state.score < state.costClick;
         if(btnUpgradeAuto) btnUpgradeAuto.disabled = state.score < state.costAuto;
-        const petDisplay = document.getElementById('petDisplay');
-        if(petDisplay) petDisplay.innerText = `🐱 打工喵: +${state.petHappy*6}%伤害`;
         updateAchievement();
         const span = clickBtn?.querySelector('span');
-        if(span && !state.isBossMode) span.innerHTML = skins[state.skinIndex] || "🐛";
+        if(span && !state.isBossMode) span.innerHTML = "🐛";
     }
 
-    // 绑定改名按钮
     if(setNicknameBtn) setNicknameBtn.onclick = setNickname;
     const refreshBtn = document.getElementById('refreshLeaderboardBtn');
     if(refreshBtn) refreshBtn.onclick = fetchLeaderboard;
     
-    // ========== 自动刷新排行榜（每10秒）==========
-    let autoRefreshInterval = null;
+    let autoRefreshInterval = setInterval(() => { fetchLeaderboard(); }, 10000);
     
-    function startAutoRefresh() {
-        if (autoRefreshInterval) clearInterval(autoRefreshInterval);
-        autoRefreshInterval = setInterval(() => {
-            fetchLeaderboard();
-            console.log("🔄 排行榜自动刷新中...");
-        }, 10000); // 10秒刷新一次
-    }
-    
-    function stopAutoRefresh() {
-        if (autoRefreshInterval) {
-            clearInterval(autoRefreshInterval);
-            autoRefreshInterval = null;
-        }
-    }
-    
-    // 初始化
     loadLocalData();
+    loadChatHistory();
     updateUI();
     fetchLeaderboard();
-    startAutoRefresh(); // 启动自动刷新
     
-    // 每30秒同步分数到云端
-    setInterval(() => { 
-        syncScoreToCloud(); 
-        saveLocalData(); 
-    }, 30000);
-    
-    window.addEventListener('beforeunload', () => { 
-        syncScoreToCloud(); 
-        saveLocalData();
-        stopAutoRefresh();
-    });
-    
-    createGlobalToast("🎉 输入昵称，点击🐛打工，排行榜每10秒自动更新!", 3000);
-    console.log("✅ 游戏已启动，排行榜自动刷新已开启");
+    setInterval(() => { if(state.nickname) { syncScoreToCloud(); saveLocalData(); } }, 30000);
+    window.addEventListener('beforeunload', () => { if(state.nickname) { syncScoreToCloud(); saveLocalData(); } clearInterval(autoRefreshInterval); });
+    createGlobalToast("⚡ 数据已恢复！", 3500);
 </script>
 </body>
 </html>
