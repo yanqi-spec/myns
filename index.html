@@ -507,20 +507,20 @@
         <div style="font-size:0.65rem; margin-top:6px; color:#ffaa66;">※ 修改后实时上传排行榜</div>
     </div>
 
-    <!-- 在线讨论区 -->
+    <!-- 在线讨论区 - 全球实时 -->
     <div class="discuss-card">
         <div class="discuss-header">
-            <span>💬 全球打工闲聊</span>
-            <button id="clearChatBtn" style="background:none; border:none; color:#f99; font-size:10px; cursor:pointer;">🗑️ 清空</button>
+            <span>💬 全球打工闲聊 (实时)</span>
+            <button id="clearChatBtn" style="background:none; border:none; color:#f99; font-size:10px; cursor:pointer;">🗑️ 清空本地</button>
         </div>
         <div id="chatMessagesArea" class="messages-area">
-            <div class="chat-message">✨ 赛博讨论区已上线，友善交流~</div>
+            <div class="chat-message">✨ 加载全球聊天中...</div>
         </div>
         <div class="chat-input-area">
-            <input type="text" id="chatMessageInput" class="chat-input" placeholder="输入消息..." maxlength="100">
+            <input type="text" id="chatMessageInput" class="chat-input" placeholder="输入消息，全球玩家可见..." maxlength="100">
             <button id="sendChatBtn" class="chat-send">📨 发送</button>
         </div>
-        <div style="font-size:10px; text-align:center; margin-top:6px;">💬 本地存储 | 昵称同步聊天</div>
+        <div style="font-size:10px; text-align:center; margin-top:6px;">🌐 所有消息云端同步 | 友善交流</div>
     </div>
 
     <div class="leaderboard-card">
@@ -554,8 +554,8 @@
     const SUPABASE_URL = "https://gcmtafldxznnrtjekxgg.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdjbXRhZmxkeHpubnJ0amVreGdnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY1MDEwODQsImV4cCI6MjA5MjA3NzA4NH0.-ZUF26LfBTBSHyrjENI-Rj-8xKQiS2yKLgv7vQ03Tio";
     
-    async function supabaseFetch(method, data = null) {
-        const url = `${SUPABASE_URL}/rest/v1/worker_rank`;
+    async function supabaseFetch(method, data = null, table = 'worker_rank') {
+        const url = `${SUPABASE_URL}/rest/v1/${table}`;
         const headers = {
             'apikey': SUPABASE_ANON_KEY,
             'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
@@ -563,22 +563,44 @@
         };
         try {
             if (method === 'GET') {
-                const response = await fetch(url + '?order=score.desc&limit=20', { headers });
+                let queryUrl = url;
+                if (table === 'worker_rank') queryUrl += '?order=score.desc&limit=20';
+                if (table === 'chat_messages') queryUrl += '?order=created_at.desc&limit=50';
+                const response = await fetch(queryUrl, { headers });
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 return await response.json();
-            } else if (method === 'UPSERT') {
+            } else if (method === 'POST') {
                 const response = await fetch(url, {
                     method: 'POST',
-                    headers: { ...headers, 'Prefer': 'resolution=merge-duplicates' },
+                    headers: { ...headers, 'Prefer': 'return=minimal' },
                     body: JSON.stringify(data)
                 });
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                return await response.json();
+                return true;
             }
         } catch(e) {
-            console.warn("Supabase error:", e);
+            console.warn(`Supabase error (${table}):`, e);
             return null;
         }
+    }
+
+    // 排行榜专用 UPSERT
+    async function upsertScore(nickname, score) {
+        const url = `${SUPABASE_URL}/rest/v1/worker_rank`;
+        const headers = {
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+            'Content-Type': 'application/json',
+            'Prefer': 'resolution=merge-duplicates'
+        };
+        try {
+            await fetch(url, {
+                method: 'POST',
+                headers: headers,
+                body: JSON.stringify({ nickname, score, updated_at: new Date().toISOString() })
+            });
+            return true;
+        } catch(e) { console.warn(e); return false; }
     }
 
     // ========== 游戏核心状态 ==========
@@ -597,8 +619,6 @@
         tempRageMult: 1,
         nickname: ""
     };
-
-    let chatMessages = [];
 
     // DOM 元素
     const elScore = document.getElementById('score');
@@ -834,58 +854,53 @@
         };
     }
 
-    // 讨论区
-    function loadChatHistory(){
-        let stored = localStorage.getItem('cyberChatHistory');
-        if(stored){
-            try{
-                chatMessages = JSON.parse(stored);
-                if(!Array.isArray(chatMessages)) chatMessages = [];
-            }catch(e){ chatMessages = []; }
-        }
-        if(chatMessages.length === 0){
-            chatMessages.push({name:"系统", msg:"赛博打工人们好！", timestamp:Date.now()});
-        }
-        renderChat();
+    // ========== 全球实时聊天 (Supabase) ==========
+    async function loadGlobalChat() {
+        try {
+            const messages = await supabaseFetch('GET', null, 'chat_messages');
+            if (messages && messages.length > 0) {
+                const container = document.getElementById('chatMessagesArea');
+                // 倒序显示，最新的在下面
+                const reversed = [...messages].reverse();
+                container.innerHTML = reversed.map(m => {
+                    let timeStr = new Date(m.created_at).toLocaleTimeString().slice(0,5);
+                    let displayName = m.nickname === state.nickname ? `✨${m.nickname}✨` : m.nickname;
+                    return `<div class="chat-message"><span class="msg-name">${escapeHtml(displayName)}</span><span class="msg-time">${timeStr}</span><br>${escapeHtml(m.message)}</div>`;
+                }).join('');
+                container.scrollTop = container.scrollHeight;
+            } else {
+                document.getElementById('chatMessagesArea').innerHTML = '<div class="chat-message">✨ 暂无消息，快来全球首发言！</div>';
+            }
+        } catch(e) { console.warn(e); }
     }
-    function renderChat(){
-        const container = document.getElementById('chatMessagesArea');
-        if(!container) return;
-        container.innerHTML = chatMessages.slice(-30).map(m => {
-            let timeStr = new Date(m.timestamp).toLocaleTimeString().slice(0,5);
-            let displayName = m.name === state.nickname ? `✨${m.name}✨` : m.name;
-            return `<div class="chat-message"><span class="msg-name">${escapeHtml(displayName)}</span><span class="msg-time">${timeStr}</span><br>${escapeHtml(m.msg)}</div>`;
-        }).join('');
-        container.scrollTop = container.scrollHeight;
-    }
-    function sendMessage(){
+
+    async function sendGlobalMessage() {
         let input = document.getElementById('chatMessageInput');
         let msg = input.value.trim();
         if(!msg) return;
         if(!state.nickname || state.nickname === ""){ createGlobalToast("请先设置昵称再发言"); return; }
-        chatMessages.push({name: state.nickname, msg: msg, timestamp: Date.now()});
-        if(chatMessages.length > 100) chatMessages = chatMessages.slice(-100);
-        localStorage.setItem('cyberChatHistory', JSON.stringify(chatMessages));
-        renderChat();
-        input.value = "";
+        const success = await supabaseFetch('POST', { nickname: state.nickname, message: msg }, 'chat_messages');
+        if(success) {
+            input.value = "";
+            await loadGlobalChat();
+            createGlobalToast("💬 消息已发送到全球", 800);
+        } else {
+            createGlobalToast("发送失败，请检查网络", 1000);
+        }
     }
-    document.getElementById('sendChatBtn')?.addEventListener('click', sendMessage);
-    document.getElementById('chatMessageInput')?.addEventListener('keypress', (e)=>{ if(e.key==='Enter') sendMessage(); });
+
+    document.getElementById('sendChatBtn')?.addEventListener('click', sendGlobalMessage);
+    document.getElementById('chatMessageInput')?.addEventListener('keypress', (e)=>{ if(e.key==='Enter') sendGlobalMessage(); });
     document.getElementById('clearChatBtn')?.addEventListener('click', ()=>{
-        chatMessages = [{name:"系统", msg:"聊天记录已清空", timestamp:Date.now()}];
-        localStorage.setItem('cyberChatHistory', JSON.stringify(chatMessages));
-        renderChat();
-        createGlobalToast("聊天记录已清空", 800);
+        // 清空按钮仅清空本地显示，不清数据库（出于安全考虑，普通用户不能删库）
+        loadGlobalChat(); // 重新加载就是刷新
+        createGlobalToast("已刷新聊天记录", 800);
     });
 
     async function syncScoreToCloud() {
         if(!state.nickname || state.nickname === "") return;
         try {
-            await supabaseFetch('UPSERT', { 
-                nickname: state.nickname,
-                score: Math.floor(state.score),
-                updated_at: new Date().toISOString()
-            });
+            await upsertScore(state.nickname, Math.floor(state.score));
             if(saveTipSpan) {
                 saveTipSpan.innerText = "☁️ 已同步";
                 setTimeout(() => { if(saveTipSpan) saveTipSpan.innerText = "💾 本地存档中"; }, 1500);
@@ -896,7 +911,7 @@
     async function fetchLeaderboard() {
         if(!rankListContainer) return;
         try {
-            const data = await supabaseFetch('GET');
+            const data = await supabaseFetch('GET', null, 'worker_rank');
             if(data && data.length > 0) {
                 rankListContainer.innerHTML = data.map((item, idx) => `
                     <div class="rank-item">
@@ -923,7 +938,6 @@
         }); 
     }
 
-    // ========== 核心：单设备单昵称 + 完整读取旧存档 ==========
     async function setNickname() {
         let newName = nicknameInput ? nicknameInput.value.trim() : "";
         if(newName === "") { createGlobalToast("请输入昵称(1~16字符)", 1000); return; }
@@ -942,24 +956,31 @@
         saveLocalData();
     }
 
-    // 重点：兼容旧版存储键名 "cyberWorkerData" 和 "cyberWorkerFull"
+    function saveLocalData() {
+        if(!state.nickname) return;
+        let data = { 
+            nickname: state.nickname,
+            score: state.score,
+            clickPower: state.clickPower,
+            autoRate: state.autoRate,
+            costClick: state.costClick,
+            costAuto: state.costAuto,
+            critChance: state.critChance,
+            critDamage: state.critDamage,
+            isBossMode: state.isBossMode
+        };
+        localStorage.setItem('cyberWorkerFull', JSON.stringify(data));
+    }
+    
     function loadLocalData() {
         let boundNick = localStorage.getItem('deviceBoundNickname');
-        let rawData = null;
-        // 优先读取最新的存储键
-        let latestRaw = localStorage.getItem('cyberWorkerFull');
-        if(latestRaw) rawData = latestRaw;
-        else {
-            // 兼容旧版键名
-            let oldRaw = localStorage.getItem('cyberWorkerData');
-            if(oldRaw) rawData = oldRaw;
-        }
+        let rawData = localStorage.getItem('cyberWorkerFull');
+        if(!rawData) rawData = localStorage.getItem('cyberWorkerData');
         
         if(rawData) {
             try {
                 let d = JSON.parse(rawData);
                 if(d.nickname && !boundNick) {
-                    // 如果旧数据有昵称且未绑定，自动绑定
                     boundNick = d.nickname;
                     localStorage.setItem('deviceBoundNickname', boundNick);
                 }
@@ -976,7 +997,6 @@
                     if(state.isBossMode) document.body.classList.add('boss-mode');
                     else document.body.classList.remove('boss-mode');
                 } else if(boundNick && (!d.nickname || d.nickname !== boundNick)) {
-                    // 已有绑定但存档数据不匹配，仅恢复昵称
                     state.nickname = boundNick;
                 } else if(!boundNick && d.nickname) {
                     state.nickname = d.nickname;
@@ -995,28 +1015,10 @@
             } catch(e) { console.warn("读取存档失败", e); }
         }
         
-        if(!state.nickname) {
-            state.nickname = "";
-        }
+        if(!state.nickname) state.nickname = "";
         if(currentNickDisplay && state.nickname) currentNickDisplay.innerText = `👤 ${state.nickname}`;
         if(nicknameInput && state.nickname) nicknameInput.value = state.nickname;
         updateUI();
-    }
-
-    function saveLocalData() {
-        if(!state.nickname) return;
-        let data = { 
-            nickname: state.nickname,
-            score: state.score,
-            clickPower: state.clickPower,
-            autoRate: state.autoRate,
-            costClick: state.costClick,
-            costAuto: state.costAuto,
-            critChance: state.critChance,
-            critDamage: state.critDamage,
-            isBossMode: state.isBossMode
-        };
-        localStorage.setItem('cyberWorkerFull', JSON.stringify(data));
     }
 
     function updateAchievement() { 
@@ -1046,15 +1048,16 @@
     if(refreshBtn) refreshBtn.onclick = fetchLeaderboard;
     
     let autoRefreshInterval = setInterval(() => { fetchLeaderboard(); }, 10000);
+    let autoChatRefresh = setInterval(() => { loadGlobalChat(); }, 5000);
     
     loadLocalData();
-    loadChatHistory();
+    loadGlobalChat();
     updateUI();
     fetchLeaderboard();
     
     setInterval(() => { if(state.nickname) { syncScoreToCloud(); saveLocalData(); } }, 30000);
-    window.addEventListener('beforeunload', () => { if(state.nickname) { syncScoreToCloud(); saveLocalData(); } clearInterval(autoRefreshInterval); });
-    createGlobalToast("⚡ 数据已恢复！", 3500);
+    window.addEventListener('beforeunload', () => { if(state.nickname) { syncScoreToCloud(); saveLocalData(); } clearInterval(autoRefreshInterval); clearInterval(autoChatRefresh); });
+    createGlobalToast("🌍 全球聊天已上线！所有人可见 | ", 4000);
 </script>
 </body>
 </html>
