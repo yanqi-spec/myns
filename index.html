@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>赛博打工人：BUG帝国 · 全球排行版</title>
+    <title>赛博打工人：BUG帝国 · </title>
     <style>
         * {
             touch-action: manipulation;
@@ -584,7 +584,7 @@
         }
     }
 
-    // 排行榜专用 UPSERT
+    // 排行榜专用 UPSERT (更新或插入)
     async function upsertScore(nickname, score) {
         const url = `${SUPABASE_URL}/rest/v1/worker_rank`;
         const headers = {
@@ -860,7 +860,6 @@
             const messages = await supabaseFetch('GET', null, 'chat_messages');
             if (messages && messages.length > 0) {
                 const container = document.getElementById('chatMessagesArea');
-                // 倒序显示，最新的在下面
                 const reversed = [...messages].reverse();
                 container.innerHTML = reversed.map(m => {
                     let timeStr = new Date(m.created_at).toLocaleTimeString().slice(0,5);
@@ -892,8 +891,7 @@
     document.getElementById('sendChatBtn')?.addEventListener('click', sendGlobalMessage);
     document.getElementById('chatMessageInput')?.addEventListener('keypress', (e)=>{ if(e.key==='Enter') sendGlobalMessage(); });
     document.getElementById('clearChatBtn')?.addEventListener('click', ()=>{
-        // 清空按钮仅清空本地显示，不清数据库（出于安全考虑，普通用户不能删库）
-        loadGlobalChat(); // 重新加载就是刷新
+        loadGlobalChat();
         createGlobalToast("已刷新聊天记录", 800);
     });
 
@@ -938,22 +936,30 @@
         }); 
     }
 
+    // 核心：改名功能完全可用（允许自由更换昵称，但需处理旧昵称的积分迁移）
     async function setNickname() {
         let newName = nicknameInput ? nicknameInput.value.trim() : "";
         if(newName === "") { createGlobalToast("请输入昵称(1~16字符)", 1000); return; }
         if(newName.length > 16) newName = newName.slice(0,16);
-        const localBind = localStorage.getItem('deviceBoundNickname');
-        if(localBind && localBind !== newName) {
-            createGlobalToast(`❌ 此设备已绑定昵称「${localBind}」，无法更换。一个设备只能使用一个代号。`, 2500);
+        
+        const oldNick = state.nickname;
+        // 如果新旧昵称相同，无需操作
+        if(oldNick === newName) {
+            createGlobalToast("昵称相同，无需修改", 800);
             return;
         }
+        
+        // 无论之前是否有昵称，直接允许修改，但要同步数据：将当前积分上传到新昵称，并清除旧昵称数据（逻辑上保留旧记录但不再关联）
         state.nickname = newName;
+        // 更新本地存储的绑定（改为新昵称，不再限制设备绑定，让改名真正可用）
         localStorage.setItem('deviceBoundNickname', newName);
         if(currentNickDisplay) currentNickDisplay.innerText = `👤 ${state.nickname}`;
-        createGlobalToast(`✅ 代号已锁定: ${state.nickname} (本设备唯一)`, 1500);
+        
+        // 将当前分数同步到新昵称
         await syncScoreToCloud();
         await fetchLeaderboard();
         saveLocalData();
+        createGlobalToast(`✅ 昵称已更改为「${state.nickname}」，积分已迁移！`, 1500);
     }
 
     function saveLocalData() {
@@ -980,10 +986,7 @@
         if(rawData) {
             try {
                 let d = JSON.parse(rawData);
-                if(d.nickname && !boundNick) {
-                    boundNick = d.nickname;
-                    localStorage.setItem('deviceBoundNickname', boundNick);
-                }
+                // 优先使用存储的昵称，如果设备绑定了且与存档一致则读取，否则允许加载存档的昵称
                 if(boundNick && d.nickname === boundNick) {
                     state.nickname = boundNick;
                     state.score = d.score || 0;
@@ -994,10 +997,17 @@
                     state.critChance = d.critChance !== undefined ? d.critChance : 0.15;
                     state.critDamage = d.critDamage !== undefined ? d.critDamage : 2.0;
                     state.isBossMode = d.isBossMode || false;
-                    if(state.isBossMode) document.body.classList.add('boss-mode');
-                    else document.body.classList.remove('boss-mode');
                 } else if(boundNick && (!d.nickname || d.nickname !== boundNick)) {
+                    // 设备有绑定但存档不一致，直接采用绑定昵称，并保留游戏进度（分数等保留）
                     state.nickname = boundNick;
+                    state.score = d.score || 0;
+                    state.clickPower = d.clickPower || 1;
+                    state.autoRate = d.autoRate || 0;
+                    state.costClick = d.costClick || 100;
+                    state.costAuto = d.costAuto || 500;
+                    state.critChance = d.critChance !== undefined ? d.critChance : 0.15;
+                    state.critDamage = d.critDamage !== undefined ? d.critDamage : 2.0;
+                    state.isBossMode = d.isBossMode || false;
                 } else if(!boundNick && d.nickname) {
                     state.nickname = d.nickname;
                     localStorage.setItem('deviceBoundNickname', d.nickname);
@@ -1009,8 +1019,6 @@
                     state.critChance = d.critChance !== undefined ? d.critChance : 0.15;
                     state.critDamage = d.critDamage !== undefined ? d.critDamage : 2.0;
                     state.isBossMode = d.isBossMode || false;
-                    if(state.isBossMode) document.body.classList.add('boss-mode');
-                    else document.body.classList.remove('boss-mode');
                 }
             } catch(e) { console.warn("读取存档失败", e); }
         }
@@ -1018,6 +1026,8 @@
         if(!state.nickname) state.nickname = "";
         if(currentNickDisplay && state.nickname) currentNickDisplay.innerText = `👤 ${state.nickname}`;
         if(nicknameInput && state.nickname) nicknameInput.value = state.nickname;
+        if(state.isBossMode) document.body.classList.add('boss-mode');
+        else document.body.classList.remove('boss-mode');
         updateUI();
     }
 
@@ -1057,7 +1067,7 @@
     
     setInterval(() => { if(state.nickname) { syncScoreToCloud(); saveLocalData(); } }, 30000);
     window.addEventListener('beforeunload', () => { if(state.nickname) { syncScoreToCloud(); saveLocalData(); } clearInterval(autoRefreshInterval); clearInterval(autoChatRefresh); });
-    createGlobalToast("🌍 全球聊天已上线！所有人可见 | ", 4000);
+    createGlobalToast("🌍 全球聊天已上线！可随时改名 | 公平竞技", 4000);
 </script>
 </body>
 </html>
